@@ -24,7 +24,7 @@ class GameStats:
         return f"{self.wins / self.rounds_played * 100:.1f}%"
 
 
-def display_stats(stats: GameStats) -> None:
+def display_stats(stats: GameStats, *, rounds_label: str = "Hands Played") -> None:
     """Display a post-game session summary."""
     clear_screen()
 
@@ -33,7 +33,7 @@ def display_stats(stats: GameStats) -> None:
 
     rows = [
         ("Game", stats.game_name),
-        ("Hands Played", str(stats.rounds_played)),
+        (rounds_label, str(stats.rounds_played)),
         ("Wins", str(stats.wins)),
         ("Losses", str(stats.losses)),
         ("Pushes", str(stats.pushes)),
