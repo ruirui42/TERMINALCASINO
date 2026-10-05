@@ -10,6 +10,7 @@ import casino.utils as utils
 from casino.types import GameContext
 from casino.utils import clear_screen, cprint, cinput, display_topbar
 from casino.accounts import Account
+from casino.stats import GameStats, display_stats
 
 ROULETTE_HEADER = """
 ┌────────────────────────────────────────────────┐
@@ -649,6 +650,7 @@ def play_european_roulette(context: GameContext) -> None:
     accounts = [context.account]
 
     roulette = EuropeanRoulette(accounts)
+    stats = GameStats("Roulette (European)", context.account.balance)
     while True:
         roulette.reset_round()
         render_header(context)
@@ -657,14 +659,25 @@ def play_european_roulette(context: GameContext) -> None:
         choice = cinput("Press [Enter] to start a new round and [q] to quit: ").strip().lower()
 
         if choice in {"q", "quit"}:
-            return
+            break
 
+        round_starting_balance = context.account.balance
         status = roulette.submit_bets(context)
         if status == "BANKRUPT":
-            return
+            break
 
         roulette.spin_wheel(context)
         roulette.payout()
+
+        # Only count completed spins on which the player wagered coins.
+        bet = roulette.bets.get(str(context.account.aid))
+        if bet is not None and bet["amount"] > 0:
+            stats.rounds_played += 1
+            if context.account.balance > round_starting_balance:
+                stats.wins += 1
+            else:
+                stats.losses += 1
+
         refresh_roulette_topbar(context)
 
         # play again?
@@ -672,7 +685,7 @@ def play_european_roulette(context: GameContext) -> None:
         if play_again in {"", "y", "yes"}:
             pass  # next round
         elif play_again in {"n", "no"}:
-            return
+            break
         else:
             play_again = prompt_with_error(
                 ctx=context,
@@ -683,4 +696,7 @@ def play_european_roulette(context: GameContext) -> None:
                 transform=lambda s: s.strip().lower(),
             )
             if play_again in {"n", "no"}:
-                return
+                break
+
+    stats.ending_balance = context.account.balance
+    display_stats(stats, rounds_label="Spins Played")
